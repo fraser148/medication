@@ -46,7 +46,8 @@ export async function sendStatus(
   lastDoseAgo: string,
   nextDoseIn: string,
   dosesToday: number,
+  maxDosesToday: number,
 ): Promise<boolean> {
-  const message = `\u{1F4CA} <b>Status</b>\n\nLast dose: ${lastDoseAgo}\nNext dose: ${nextDoseIn}\nDoses today: ${dosesToday}/5`;
+  const message = `\u{1F4CA} <b>Status</b>\n\nLast dose: ${lastDoseAgo}\nNext dose: ${nextDoseIn}\nDoses today: ${dosesToday}/${maxDosesToday}`;
   return sendTelegramMessage(chatId, message);
 }

@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import {
   getDosesToday,
+  getFirstDoseEver,
   getLastDose,
   logDose,
   saveTelegramChatId,
@@ -10,6 +11,7 @@ import {
   formatTime,
   formatTimeAgo,
   formatTimeUntil,
+  getMaxDosesForToday,
 } from "@/lib/schedule";
 import {
   sendDoseConfirmation,
@@ -57,13 +59,16 @@ export async function POST(request: NextRequest) {
     } else if (text === "/status") {
       const lastDoseTimestamp = await getLastDose();
       const dosesToday = await getDosesToday();
+      const firstDoseEver = await getFirstDoseEver();
       const { next } = calculateNextTwoDoses(lastDoseTimestamp, dosesToday);
+      const maxDosesToday = getMaxDosesForToday(dosesToday, firstDoseEver);
 
       await sendStatus(
         chatId,
         lastDoseTimestamp ? formatTimeAgo(lastDoseTimestamp) : "Never",
         formatTimeUntil(next),
         dosesToday.length,
+        maxDosesToday,
       );
     } else if (text === "/help") {
       await sendTelegramMessage(

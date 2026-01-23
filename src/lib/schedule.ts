@@ -2,6 +2,10 @@
 const SLEEP_GAP_HOURS = 6; // Gap indicating sleep
 const DOSES_PER_DAY = 5;
 const DEFAULT_WAKE_HOUR = 8; // Default assumed wake time if no first dose today
+const WAKE_START_HOUR = 9;
+const WAKE_END_HOUR = 23;
+const WAKE_DURATION_MINS = (WAKE_END_HOUR - WAKE_START_HOUR) * 60; // 840
+const INTERVAL_MINS = WAKE_DURATION_MINS / (DOSES_PER_DAY - 1); // 210
 
 /**
  * Check if this would be the first dose of the day (6+ hour gap since last dose)
@@ -165,4 +169,66 @@ export function formatTimeAgo(timestamp: number): string {
   }
 
   return `${Math.floor(hours / 24)}d ago`;
+}
+
+function sameDay(timestamp1: number, timestamp2: number): boolean {
+  const date1 = new Date(timestamp1);
+  const date2 = new Date(timestamp2);
+  return (
+    date1.getFullYear() === date2.getFullYear() &&
+    date1.getMonth() === date2.getMonth() &&
+    date1.getDate() === date2.getDate()
+  );
+}
+
+function calculateFirstDayMax(firstDoseTimestamp: number): number {
+  const firstDoseDate = new Date(firstDoseTimestamp);
+  const minutesFromMidnight =
+    firstDoseDate.getHours() * 60 + firstDoseDate.getMinutes();
+
+  const wakeStartMins = WAKE_START_HOUR * 60; // 540
+  const wakeEndMins = WAKE_END_HOUR * 60; // 1380
+
+  // Too late in the day
+  if (minutesFromMidnight >= wakeEndMins) {
+    return 1;
+  }
+
+  // Before or at wake time - full doses
+  if (minutesFromMidnight <= wakeStartMins) {
+    return DOSES_PER_DAY;
+  }
+
+  // Calculate missed slots using ceil (if past a slot time, it's missed)
+  const minutesSinceWake = minutesFromMidnight - wakeStartMins;
+  const slotsMissed = Math.ceil(minutesSinceWake / INTERVAL_MINS);
+
+  const dosesRemaining = DOSES_PER_DAY - slotsMissed;
+
+  return Math.max(1, dosesRemaining);
+}
+
+export function getMaxDosesForToday(
+  dosesToday: number[],
+  firstDoseEver: number | null,
+): number {
+  // No doses ever - return default (will recalculate after first dose)
+  if (firstDoseEver === null) {
+    return DOSES_PER_DAY;
+  }
+
+  // No doses today but have historical doses - it's a new day, full count
+  if (dosesToday.length === 0) {
+    return DOSES_PER_DAY;
+  }
+
+  // Check if today is THE first day ever
+  const firstDoseToday = dosesToday[0];
+  if (sameDay(firstDoseToday, firstDoseEver)) {
+    // This is day 1 - calculate reduced max
+    return calculateFirstDayMax(firstDoseEver);
+  }
+
+  // Normal day
+  return DOSES_PER_DAY;
 }

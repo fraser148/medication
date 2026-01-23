@@ -18,6 +18,8 @@ interface DoseData {
     formatted: string;
   };
   dosesToday: number;
+  maxDosesToday: number;
+  dosesRemaining: number;
   overdueMinutes: number;
   isOverdue: boolean;
 }
@@ -276,7 +278,7 @@ export default function Home() {
                     d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
                   />
                 </svg>
-                {data.dosesToday}/5 doses today
+                {data.dosesToday}/{data.maxDosesToday} doses today
               </span>
             )}
           </div>
@@ -360,7 +362,9 @@ export default function Home() {
                 onClick={openBackdateModal}
                 className="text-slate-400 text-xs hover:text-slate-600 dark:hover:text-slate-300 underline"
               >
-                {data.lastDose ? "Forgot to log a dose?" : "Log time of first dose"}
+                {data.lastDose
+                  ? "Forgot to log a dose?"
+                  : "Log time of first dose"}
               </button>
             </div>
           </div>

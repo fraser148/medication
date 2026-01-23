@@ -23,6 +23,12 @@ export async function getLastDose(): Promise<number | null> {
   return parseInt(results[0] as string, 10);
 }
 
+export async function getFirstDoseEver(): Promise<number | null> {
+  const results = await redis.zrange(DOSES_KEY, 0, 0);
+  if (results.length === 0) return null;
+  return parseInt(results[0] as string, 10);
+}
+
 export async function getDosesToday(): Promise<number[]> {
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   getDosesToday,
+  getFirstDoseEver,
   getLastDose,
   getTelegramChatId,
   logDose,
@@ -10,6 +11,7 @@ import {
   formatTime,
   formatTimeAgo,
   formatTimeUntil,
+  getMaxDosesForToday,
   getOverdueMinutes,
 } from "@/lib/schedule";
 import { sendDoseConfirmation } from "@/lib/telegram";
@@ -18,11 +20,13 @@ export async function GET() {
   try {
     const lastDoseTimestamp = await getLastDose();
     const dosesToday = await getDosesToday();
+    const firstDoseEver = await getFirstDoseEver();
     const { next, nextNext } = calculateNextTwoDoses(
       lastDoseTimestamp,
       dosesToday,
     );
     const overdueMinutes = getOverdueMinutes(lastDoseTimestamp, dosesToday);
+    const maxDosesToday = getMaxDosesForToday(dosesToday, firstDoseEver);
 
     return NextResponse.json({
       lastDose: lastDoseTimestamp
@@ -42,6 +46,8 @@ export async function GET() {
         formatted: formatTime(nextNext),
       },
       dosesToday: dosesToday.length,
+      maxDosesToday,
+      dosesRemaining: maxDosesToday - dosesToday.length,
       overdueMinutes,
       isOverdue: overdueMinutes > 0,
     });
