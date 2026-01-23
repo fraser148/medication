@@ -1,36 +1,56 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Medication Tracker
 
-## Getting Started
+A simple app to track medication doses with Telegram reminders.
 
-First, run the development server:
+## Setup
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+### 1. Upstash Redis
+
+1. Go to [Upstash Console](https://console.upstash.com)
+2. Create a new Redis database (free tier)
+3. Copy the REST URL and Token
+
+### 2. Telegram Bot
+
+1. Message [@BotFather](https://t.me/BotFather) on Telegram
+2. Send `/newbot` and follow the prompts
+3. Copy the bot token
+
+### 3. Environment Variables
+
+Create `.env.local`:
+
+```env
+UPSTASH_REDIS_REST_URL=your-url-here
+UPSTASH_REDIS_REST_TOKEN=your-token-here
+TELEGRAM_BOT_TOKEN=your-bot-token-here
+CRON_SECRET=any-random-string
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 4. Deploy to Vercel
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+bun install
+vercel
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 5. Set Telegram Webhook
 
-## Learn More
+After deployment, set the webhook:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+curl "https://api.telegram.org/bot<YOUR_BOT_TOKEN>/setWebhook?url=https://<YOUR_VERCEL_URL>/api/telegram/webhook"
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 6. Start Using
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. Open the app in your browser
+2. Message your Telegram bot `/start` to enable reminders
+3. Take your medication and tap the button!
 
-## Deploy on Vercel
+## Commands
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `/start` - Register for reminders
+- `/take` - Log a dose via Telegram
+- `/status` - Check your schedule
+- `/help` - Show help
