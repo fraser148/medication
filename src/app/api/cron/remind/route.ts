@@ -1,12 +1,13 @@
 import { type NextRequest, NextResponse } from "next/server";
 import {
   getDosesToday,
+  getFirstDoseEver,
   getLastDose,
   getLastReminderTime,
   getTelegramChatId,
   setLastReminderTime,
 } from "@/lib/redis";
-import { getOverdueMinutes } from "@/lib/schedule";
+import { getMaxDosesForToday, getOverdueMinutes } from "@/lib/schedule";
 import { sendReminder } from "@/lib/telegram";
 
 export async function GET(request: NextRequest) {
@@ -24,7 +25,13 @@ export async function GET(request: NextRequest) {
 
     const lastDoseTimestamp = await getLastDose();
     const dosesToday = await getDosesToday();
-    const overdueMinutes = getOverdueMinutes(lastDoseTimestamp, dosesToday);
+    const firstDoseEver = await getFirstDoseEver();
+    const maxDosesToday = getMaxDosesForToday(dosesToday, firstDoseEver);
+    const overdueMinutes = getOverdueMinutes(
+      lastDoseTimestamp,
+      dosesToday,
+      maxDosesToday,
+    );
 
     // Only send reminder if overdue by more than 15 minutes
     if (overdueMinutes < 15) {

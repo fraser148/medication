@@ -21,12 +21,17 @@ export async function GET() {
     const lastDoseTimestamp = await getLastDose();
     const dosesToday = await getDosesToday();
     const firstDoseEver = await getFirstDoseEver();
+    const maxDosesToday = getMaxDosesForToday(dosesToday, firstDoseEver);
     const { next, nextNext } = calculateNextTwoDoses(
       lastDoseTimestamp,
       dosesToday,
+      maxDosesToday,
     );
-    const overdueMinutes = getOverdueMinutes(lastDoseTimestamp, dosesToday);
-    const maxDosesToday = getMaxDosesForToday(dosesToday, firstDoseEver);
+    const overdueMinutes = getOverdueMinutes(
+      lastDoseTimestamp,
+      dosesToday,
+      maxDosesToday,
+    );
 
     return NextResponse.json({
       lastDose: lastDoseTimestamp

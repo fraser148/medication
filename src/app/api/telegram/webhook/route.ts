@@ -54,14 +54,20 @@ export async function POST(request: NextRequest) {
       await logDose(now);
       // Fetch updated doses today (including the one we just logged)
       const dosesToday = await getDosesToday();
-      const { next } = calculateNextTwoDoses(now, dosesToday);
+      const firstDoseEver = await getFirstDoseEver();
+      const maxDosesToday = getMaxDosesForToday(dosesToday, firstDoseEver);
+      const { next } = calculateNextTwoDoses(now, dosesToday, maxDosesToday);
       await sendDoseConfirmation(chatId, formatTime(next));
     } else if (text === "/status") {
       const lastDoseTimestamp = await getLastDose();
       const dosesToday = await getDosesToday();
       const firstDoseEver = await getFirstDoseEver();
-      const { next } = calculateNextTwoDoses(lastDoseTimestamp, dosesToday);
       const maxDosesToday = getMaxDosesForToday(dosesToday, firstDoseEver);
+      const { next } = calculateNextTwoDoses(
+        lastDoseTimestamp,
+        dosesToday,
+        maxDosesToday,
+      );
 
       await sendStatus(
         chatId,

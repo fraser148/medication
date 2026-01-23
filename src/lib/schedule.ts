@@ -18,18 +18,9 @@ export function isFirstDoseOfDay(lastDoseTimestamp: number | null): boolean {
 }
 
 /**
- * Calculate dynamic interval based on first dose time (wake-up) until midnight
- * Spreads remaining doses evenly across waking hours
+ * Fixed interval between doses (210 minutes = 3h 30m)
  */
-export function calculateDynamicInterval(firstDoseTime: number): number {
-  const firstDose = new Date(firstDoseTime);
-  const midnight = new Date(firstDose);
-  midnight.setHours(24, 0, 0, 0); // Next midnight
-
-  const wakingMs = midnight.getTime() - firstDoseTime;
-  const intervalMs = wakingMs / (DOSES_PER_DAY - 1); // 4 intervals for 5 doses
-  return intervalMs;
-}
+const INTERVAL_MS = INTERVAL_MINS * 60 * 1000;
 
 /**
  * Get the first dose timestamp from today's doses
@@ -42,6 +33,7 @@ export function getFirstDoseToday(dosesToday: number[]): number | null {
 export function calculateNextDoseTime(
   lastDoseTimestamp: number | null,
   dosesToday: number[] = [],
+  maxDosesToday: number = DOSES_PER_DAY,
 ): Date {
   // If no doses ever, take now
   if (!lastDoseTimestamp) {
@@ -53,33 +45,31 @@ export function calculateNextDoseTime(
     return new Date();
   }
 
-  // If already taken 5 today, next is tomorrow morning
-  if (dosesToday.length >= DOSES_PER_DAY) {
+  // If already taken max doses today, next is tomorrow morning
+  if (dosesToday.length >= maxDosesToday) {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     tomorrow.setHours(DEFAULT_WAKE_HOUR, 0, 0, 0);
     return tomorrow;
   }
 
-  // Calculate interval from first dose of today
-  const firstDoseToday = getFirstDoseToday(dosesToday);
-  if (!firstDoseToday) {
-    // Edge case: no doses today but last dose was recent (shouldn't happen)
-    return new Date();
-  }
-
-  const interval = calculateDynamicInterval(firstDoseToday);
-  return new Date(lastDoseTimestamp + interval);
+  // Use fixed interval (210 minutes = 3h 30m)
+  return new Date(lastDoseTimestamp + INTERVAL_MS);
 }
 
 export function calculateNextTwoDoses(
   lastDoseTimestamp: number | null,
   dosesToday: number[] = [],
+  maxDosesToday: number = DOSES_PER_DAY,
 ): {
   next: Date;
   nextNext: Date;
 } {
-  const next = calculateNextDoseTime(lastDoseTimestamp, dosesToday);
+  const next = calculateNextDoseTime(
+    lastDoseTimestamp,
+    dosesToday,
+    maxDosesToday,
+  );
 
   // For nextNext, simulate having taken the next dose
   const simulatedDosesToday = [...dosesToday];
@@ -94,7 +84,11 @@ export function calculateNextTwoDoses(
     simulatedDosesToday.push(nextTime);
   }
 
-  const nextNext = calculateNextDoseTime(nextTime, simulatedDosesToday);
+  const nextNext = calculateNextDoseTime(
+    nextTime,
+    simulatedDosesToday,
+    maxDosesToday,
+  );
 
   return { next, nextNext };
 }
@@ -102,20 +96,30 @@ export function calculateNextTwoDoses(
 export function isDoseOverdue(
   lastDoseTimestamp: number | null,
   dosesToday: number[] = [],
+  maxDosesToday: number = DOSES_PER_DAY,
 ): boolean {
   if (!lastDoseTimestamp) return true;
 
-  const nextDueTime = calculateNextDoseTime(lastDoseTimestamp, dosesToday);
+  const nextDueTime = calculateNextDoseTime(
+    lastDoseTimestamp,
+    dosesToday,
+    maxDosesToday,
+  );
   return new Date() > nextDueTime;
 }
 
 export function getOverdueMinutes(
   lastDoseTimestamp: number | null,
   dosesToday: number[] = [],
+  maxDosesToday: number = DOSES_PER_DAY,
 ): number {
   if (!lastDoseTimestamp) return 999; // Very overdue if never taken
 
-  const nextDueTime = calculateNextDoseTime(lastDoseTimestamp, dosesToday);
+  const nextDueTime = calculateNextDoseTime(
+    lastDoseTimestamp,
+    dosesToday,
+    maxDosesToday,
+  );
   const now = new Date();
 
   if (now <= nextDueTime) return 0;
