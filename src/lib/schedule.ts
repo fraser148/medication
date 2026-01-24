@@ -23,6 +23,30 @@ export function isFirstDoseOfDay(lastDoseTimestamp: number | null): boolean {
 const INTERVAL_MS = INTERVAL_MINS * 60 * 1000;
 
 /**
+ * Check if a given time falls within sleep hours (11pm to 9am)
+ */
+function isInSleepHours(date: Date): boolean {
+  const hour = date.getHours();
+  // Sleep hours: 11pm (23) to 9am (exclusive)
+  return hour >= WAKE_END_HOUR || hour < WAKE_START_HOUR;
+}
+
+/**
+ * Get the next wake time (9am) from a given date
+ */
+function getNextWakeTime(fromDate: Date): Date {
+  const result = new Date(fromDate);
+  result.setHours(WAKE_START_HOUR, 0, 0, 0);
+
+  // If we're past wake time today, it's tomorrow's wake time
+  if (result <= fromDate) {
+    result.setDate(result.getDate() + 1);
+  }
+
+  return result;
+}
+
+/**
  * Get the first dose timestamp from today's doses
  */
 export function getFirstDoseToday(dosesToday: number[]): number | null {
@@ -49,12 +73,19 @@ export function calculateNextDoseTime(
   if (dosesToday.length >= maxDosesToday) {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(DEFAULT_WAKE_HOUR, 0, 0, 0);
+    tomorrow.setHours(WAKE_START_HOUR, 0, 0, 0);
     return tomorrow;
   }
 
-  // Use fixed interval (210 minutes = 3h 30m)
-  return new Date(lastDoseTimestamp + INTERVAL_MS);
+  // Calculate next dose using fixed interval
+  const nextDose = new Date(lastDoseTimestamp + INTERVAL_MS);
+
+  // If next dose falls in sleep hours, push to next wake time
+  if (isInSleepHours(nextDose)) {
+    return getNextWakeTime(nextDose);
+  }
+
+  return nextDose;
 }
 
 export function calculateNextTwoDoses(
