@@ -6,6 +6,34 @@ const WAKE_START_HOUR = 9;
 const WAKE_END_HOUR = 23;
 const WAKE_DURATION_MINS = (WAKE_END_HOUR - WAKE_START_HOUR) * 60; // 840
 const INTERVAL_MINS = WAKE_DURATION_MINS / (DOSES_PER_DAY - 1); // 210
+const DAY_START_HOUR = 4; // Day boundary at 4am instead of midnight
+
+/**
+ * Get the start of the "logical day" (4am) for a given date.
+ * If the time is before 4am, returns 4am of the previous calendar day.
+ */
+export function getLogicalDayStart(date: Date = new Date()): Date {
+  const result = new Date(date);
+  result.setHours(DAY_START_HOUR, 0, 0, 0);
+
+  // If current time is before 4am, the logical day started yesterday at 4am
+  if (date.getHours() < DAY_START_HOUR) {
+    result.setDate(result.getDate() - 1);
+  }
+
+  return result;
+}
+
+/**
+ * Get the end of the "logical day" (3:59:59.999am next calendar day) for a given date.
+ */
+export function getLogicalDayEnd(date: Date = new Date()): Date {
+  const dayStart = getLogicalDayStart(date);
+  const result = new Date(dayStart);
+  result.setDate(result.getDate() + 1);
+  result.setMilliseconds(result.getMilliseconds() - 1); // 3:59:59.999am
+  return result;
+}
 
 /**
  * Check if this would be the first dose of the day (6+ hour gap since last dose)
@@ -104,12 +132,10 @@ export function calculateNextTwoDoses(
 
   // For nextNext, simulate having taken the next dose
   const simulatedDosesToday = [...dosesToday];
-  // Only add if it would be today
+  // Only add if it would be today (using 4am boundary)
   const nextTime = next.getTime();
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
-  const todayEnd = new Date();
-  todayEnd.setHours(23, 59, 59, 999);
+  const todayStart = getLogicalDayStart();
+  const todayEnd = getLogicalDayEnd();
 
   if (nextTime >= todayStart.getTime() && nextTime <= todayEnd.getTime()) {
     simulatedDosesToday.push(nextTime);
@@ -207,13 +233,9 @@ export function formatTimeAgo(timestamp: number): string {
 }
 
 function sameDay(timestamp1: number, timestamp2: number): boolean {
-  const date1 = new Date(timestamp1);
-  const date2 = new Date(timestamp2);
-  return (
-    date1.getFullYear() === date2.getFullYear() &&
-    date1.getMonth() === date2.getMonth() &&
-    date1.getDate() === date2.getDate()
-  );
+  const dayStart1 = getLogicalDayStart(new Date(timestamp1)).getTime();
+  const dayStart2 = getLogicalDayStart(new Date(timestamp2)).getTime();
+  return dayStart1 === dayStart2;
 }
 
 function calculateFirstDayMax(firstDoseTimestamp: number): number {

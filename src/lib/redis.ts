@@ -1,4 +1,5 @@
 import { Redis } from "@upstash/redis";
+import { getLogicalDayEnd, getLogicalDayStart } from "./schedule";
 
 export const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL ?? "",
@@ -30,10 +31,8 @@ export async function getFirstDoseEver(): Promise<number | null> {
 }
 
 export async function getDosesToday(): Promise<number[]> {
-  const startOfDay = new Date();
-  startOfDay.setHours(0, 0, 0, 0);
-  const endOfDay = new Date();
-  endOfDay.setHours(23, 59, 59, 999);
+  const startOfDay = getLogicalDayStart();
+  const endOfDay = getLogicalDayEnd();
 
   const results = await redis.zrange(
     DOSES_KEY,
